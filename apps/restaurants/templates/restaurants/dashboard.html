@@ -1,0 +1,96 @@
+<!-- apps/restaurants/templates/restaurants/dashboard.html -->
+{% extends "base.html" %}
+
+{% block title %}Dashboard - {{ restaurant.name }}{% endblock %}
+
+{% block content %}
+<!-- Navbar -->
+<nav class="bg-white shadow-sm border-b">
+    <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
+        <div class="flex items-center gap-3">
+            {% if restaurant.logo %}
+                <img src="{{ restaurant.logo.url }}" alt="{{ restaurant.name }}" class="w-10 h-10 rounded-full object-cover">
+            {% endif %}
+            <span class="font-bold text-xl text-gray-800">{{ restaurant.name }}</span>
+        </div>
+        <div class="flex items-center gap-4">
+            <a href="{% url 'restaurants:logout' %}" class="text-red-600 hover:text-red-800 font-medium">
+                Déconnexion
+            </a>
+        </div>
+    </div>
+</nav>
+
+<div class="max-w-7xl mx-auto px-4 py-8">
+    
+    <!-- Messages -->
+    {% if messages %}
+        {% for message in messages %}
+            <div class="mb-6 p-4 rounded-lg {% if message.tags == 'error' %}bg-red-100 text-red-700{% else %}bg-green-100 text-green-700{% endif %}">
+                {{ message }}
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <!-- Stats -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div class="bg-white p-6 rounded-lg shadow">
+            <p class="text-gray-500 text-sm">Catégories</p>
+            <p class="text-3xl font-bold text-gray-800">{{ stats.categories_count }}</p>
+        </div>
+        <div class="bg-white p-6 rounded-lg shadow">
+            <p class="text-gray-500 text-sm">Plats total</p>
+            <p class="text-3xl font-bold text-gray-800">{{ stats.items_count }}</p>
+        </div>
+        <div class="bg-white p-6 rounded-lg shadow">
+            <p class="text-gray-500 text-sm">Plats disponibles</p>
+            <p class="text-3xl font-bold text-green-600">{{ stats.items_available }}</p>
+        </div>
+    </div>
+
+    <!-- QR Code Section -->
+    {% if qr_code and qr_code.qr_image %}
+    <div class="bg-white p-6 rounded-lg shadow mb-8">
+        <h2 class="text-xl font-bold text-gray-800 mb-4">📱 Votre QR Code</h2>
+        <div class="flex flex-col md:flex-row items-center gap-6">
+            <div class="bg-gray-100 p-4 rounded-lg">
+                <img src="{{ qr_code.qr_image.url }}" alt="QR Code {{ restaurant.name }}" class="w-48 h-48">
+            </div>
+            <div>
+                <p class="text-gray-600 mb-2">Lien du menu :</p>
+                <code class="bg-gray-100 px-3 py-2 rounded text-sm block mb-3">
+                    {{ request.scheme }}://{{ request.get_host }}{{ qr_code.get_menu_url }}
+                </code>
+                <button onclick="navigator.clipboard.writeText('{{ request.scheme }}://{{ request.get_host }}{{ qr_code.get_menu_url }}')"
+                        class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 text-sm">
+                    📋 Copier le lien
+                </button>
+                <a href="{{ qr_code.qr_image.url }}" download
+                   class="ml-2 bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 text-sm inline-block">
+                    ⬇️ Télécharger QR Code
+                </a>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Navigation rapide -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <!-- Gérer les catégories -->
+        <a href="{% url 'menus:category_list' %}" 
+           class="bg-white p-6 rounded-lg shadow hover:shadow-lg transition border-2 border-transparent hover:border-blue-500">
+            <div class="text-4xl mb-3">📂</div>
+            <h3 class="text-lg font-bold text-gray-800">Gérer les catégories</h3>
+            <p class="text-gray-600 text-sm mt-1">Entrées, Plats, Desserts...</p>
+        </a>
+        
+        <!-- Gérer les plats -->
+        <a href="{% url 'menus:item_list' %}" 
+           class="bg-white p-6 rounded-lg shadow hover:shadow-lg transition border-2 border-transparent hover:border-green-500">
+            <div class="text-4xl mb-3">🍽️</div>
+            <h3 class="text-lg font-bold text-gray-800">Gérer les plats</h3>
+            <p class="text-gray-600 text-sm mt-1">Ajouter, modifier, supprimer</p>
+        </a>
+    </div>
+</div>
+{% endblock %}

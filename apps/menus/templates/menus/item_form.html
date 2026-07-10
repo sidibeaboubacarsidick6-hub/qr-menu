@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}{{ action }} un plat{% endblock %}
+{% block content %}
+<nav class="bg-white shadow-sm border-b">
+    <div class="max-w-7xl mx-auto px-4 py-3">
+        <a href="{% url 'menus:item_list' %}" class="text-gray-600 hover:text-gray-800">← Retour</a>
+    </div>
+</nav>
+<div class="max-w-2xl mx-auto px-4 py-8">
+    <h1 class="text-2xl font-bold mb-6">{{ action }} un plat</h1>
+    <div class="bg-white p-6 rounded-lg shadow">
+        <form method="POST" enctype="multipart/form-data" class="space-y-5">
+            {% csrf_token %}
+            <div><label class="block text-sm font-medium mb-1">Catégorie *</label>{{ form.category }}</div>
+            <div><label class="block text-sm font-medium mb-1">Nom *</label>{{ form.name }}</div>
+            <div><label class="block text-sm font-medium mb-1">Description</label>{{ form.description }}</div>
+            <div><label class="block text-sm font-medium mb-1">Prix (€) *</label>{{ form.price }}</div>
+            <div><label class="block text-sm font-medium mb-1">Photo</label>{{ form.image }}</div>
+            <div><label class="block text-sm font-medium mb-1">Allergènes</label>{{ form.allergens }}</div>
+            <div><label class="block text-sm font-medium mb-1">Ordre</label>{{ form.order }}</div>
+            <div class="space-y-2 border-t pt-4">
+                <label class="flex items-center gap-2">{{ form.is_available }}<span class="text-sm">Disponible</span></label>
+                <label class="flex items-center gap-2">{{ form.is_vegetarian }}<span class="text-sm">🌱 Végétarien</span></label>
+                <label class="flex items-center gap-2">{{ form.is_vegan }}<span class="text-sm">🌿 Végan</span></label>
+                <label class="flex items-center gap-2">{{ form.is_gluten_free }}<span class="text-sm">🌾 Sans gluten</span></label>
+            </div>
+            <button type="submit" class="w-full bg-blue-600 text-white py-3 rounded-lg font-medium">{{ action }}</button>
+        </form>
+    </div>
+</div>
+{% endblock %}

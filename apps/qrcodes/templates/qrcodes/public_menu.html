@@ -1,0 +1,655 @@
+{% load static %}
+{% load i18n %}
+<!DOCTYPE html>
+<html lang="{{ request.LANGUAGE_CODE|default:'fr' }}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ restaurant.name }} - Menu</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        :root {
+            --primary: {{ theme.primary }};
+            --secondary: {{ theme.secondary }};
+            --background: {{ theme.background }};
+            --text: {{ theme.text }};
+            --header-opacity: {{ theme.header_opacity }};
+        }
+        * { box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
+        body {
+            background-color: var(--background);
+            color: var(--text);
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            overflow-x: hidden;
+        }
+        .hero-section {
+            position: relative;
+            height: 55vh;
+            min-height: 350px;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .hero-carousel {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            z-index: 0;
+        }
+        .hero-slide {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            object-fit: cover;
+            opacity: 0;
+            transition: opacity 1.2s ease-in-out;
+        }
+        .hero-slide.active { opacity: 1; }
+        .hero-overlay {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: linear-gradient(180deg, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0.5) 50%, rgba(0,0,0,0.85) 100%);
+            z-index: 1;
+        }
+        .hero-content {
+            position: relative;
+            z-index: 2;
+            text-align: center;
+            padding: 2rem;
+            animation: fadeInUp 1s ease-out;
+        }
+        .hero-logo {
+            width: 90px;
+            height: 90px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 3px solid white;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+            margin: 0 auto 1.5rem;
+        }
+        .hero-title {
+            font-size: clamp(1.8rem, 4vw, 3rem);
+            font-weight: 800;
+            color: white;
+            text-shadow: 0 4px 20px rgba(0,0,0,0.5);
+            margin-bottom: 0.5rem;
+        }
+        .hero-subtitle {
+            font-size: 1rem;
+            color: rgba(255,255,255,0.9);
+            margin-bottom: 1rem;
+            font-weight: 300;
+        }
+        .hero-scroll-indicator {
+            position: absolute;
+            bottom: 1.5rem;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 2;
+            animation: bounce 2s infinite;
+            color: white;
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+        .categories-section {
+            padding: 2rem 1rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .section-title {
+            text-align: center;
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin-bottom: 2rem;
+            color: var(--text);
+            position: relative;
+        }
+        .section-title::after {
+            content: '';
+            display: block;
+            width: 50px;
+            height: 4px;
+            background: var(--primary);
+            margin: 0.6rem auto 0;
+            border-radius: 2px;
+        }
+        .categories-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+            gap: 1.2rem;
+        }
+        .category-card {
+            background: white;
+            border-radius: 18px;
+            overflow: hidden;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 3px 15px rgba(0,0,0,0.08);
+            animation: fadeInUp 0.5s ease-out backwards;
+        }
+        .category-card:hover {
+            transform: translateY(-6px);
+            box-shadow: 0 12px 30px rgba(0,0,0,0.15);
+        }
+        .category-card-image {
+            height: 170px;
+            position: relative;
+            overflow: hidden;
+        }
+        .category-card-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.5s ease;
+        }
+        .category-card:hover .category-card-image img {
+            transform: scale(1.08);
+        }
+        .category-card-image .placeholder-img {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3.5rem;
+            color: white;
+        }
+        .category-card-body {
+            padding: 1rem 1.2rem 1.2rem;
+            position: relative;
+        }
+        .category-card-title {
+            font-size: 1.15rem;
+            font-weight: 700;
+            color: var(--text);
+        }
+        .category-card-count {
+            font-size: 0.8rem;
+            color: var(--primary);
+            font-weight: 600;
+            margin-top: 0.2rem;
+        }
+        .category-card-arrow {
+            position: absolute;
+            bottom: 1rem;
+            right: 1.2rem;
+            width: 36px;
+            height: 36px;
+            background: var(--primary);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 0.9rem;
+            transition: transform 0.3s ease;
+        }
+        .category-card:hover .category-card-arrow {
+            transform: translateX(5px);
+        }
+        .load-more-btn {
+            display: block;
+            margin: 2rem auto;
+            padding: 0.8rem 2rem;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 50px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .load-more-btn:hover {
+            opacity: 0.9;
+            transform: scale(1.03);
+        }
+        .load-more-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+            backdrop-filter: blur(8px);
+        }
+        .modal-overlay.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+        .modal-container {
+            background: white;
+            border-radius: 20px;
+            width: 92%;
+            max-width: 550px;
+            max-height: 80vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            animation: modalIn 0.3s ease-out;
+        }
+        @keyframes modalIn {
+            from { transform: translateY(20px) scale(0.95); opacity: 0; }
+            to { transform: translateY(0) scale(1); opacity: 1; }
+        }
+        .modal-header {
+            padding: 1.2rem;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: white;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        .modal-title {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--text);
+        }
+        .modal-close {
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            background: #f3f4f6;
+            border: none;
+            cursor: pointer;
+            font-size: 1.1rem;
+            color: #666;
+            transition: all 0.2s;
+        }
+        .modal-close:hover {
+            background: #ef4444;
+            color: white;
+        }
+        .modal-body {
+            padding: 1rem 1.2rem;
+            overflow-y: auto;
+            flex: 1;
+        }
+        .modal-item {
+            display: flex;
+            gap: 0.8rem;
+            padding: 0.8rem 0;
+            border-bottom: 1px solid #f3f4f6;
+        }
+        .modal-item:last-child { border-bottom: none; }
+        .modal-item-image {
+            width: 75px;
+            height: 75px;
+            border-radius: 10px;
+            object-fit: cover;
+            flex-shrink: 0;
+        }
+        .modal-item-image-placeholder {
+            width: 75px;
+            height: 75px;
+            border-radius: 10px;
+            background: linear-gradient(135deg, #f3f4f6, #e5e7eb);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8rem;
+            flex-shrink: 0;
+        }
+        .modal-item-info { flex: 1; min-width: 0; }
+        .modal-item-name {
+            font-weight: 700;
+            font-size: 0.95rem;
+            color: var(--text);
+        }
+        .modal-item-desc {
+            font-size: 0.8rem;
+            color: #6b7280;
+            margin-bottom: 0.3rem;
+        }
+        .modal-item-price {
+            font-weight: 700;
+            font-size: 1rem;
+            color: var(--primary);
+        }
+        .modal-item-badges {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.25rem;
+            margin-top: 0.3rem;
+        }
+        .badge {
+            font-size: 0.65rem;
+            padding: 0.15rem 0.5rem;
+            border-radius: 15px;
+            font-weight: 600;
+        }
+        .badge-veg { background: #dcfce7; color: #166534; }
+        .badge-gluten { background: #fef3c7; color: #92400e; }
+        .badge-allergen { background: #fee2e2; color: #991b1b; }
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(25px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% { transform: translateX(-50%) translateY(0); }
+            40% { transform: translateX(-50%) translateY(-12px); }
+            60% { transform: translateX(-50%) translateY(-6px); }
+        }
+        .app-footer {
+            background: #1f2937;
+            color: #9ca3af;
+            text-align: center;
+            padding: 1.2rem;
+            font-size: 0.8rem;
+            margin-top: 2rem;
+        }
+        .app-footer span { color: var(--primary); font-weight: 600; }
+        
+        @media (max-width: 640px) {
+            .hero-section { height: 45vh; min-height: 280px; }
+            .categories-grid { grid-template-columns: 1fr 1fr; gap: 0.7rem; }
+            .category-card-image { height: 120px; }
+            .category-card-body { padding: 0.7rem 0.8rem 0.9rem; }
+            .category-card-title { font-size: 0.95rem; }
+            .modal-container { width: 96%; border-radius: 16px; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Header fixe -->
+    <header class="fixed top-0 left-0 right-0 z-50 transition-all duration-300"
+            id="mainHeader"
+            style="background: rgba(255,255,255,0); padding: 1rem 1.5rem;">
+        <div class="max-w-6xl mx-auto flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                {% if restaurant.logo %}
+                    <img src="{{ restaurant.logo.url }}" alt="{{ restaurant.name }}" 
+                         class="w-9 h-9 rounded-full object-cover border-2 border-white/50">
+                {% endif %}
+                <span class="font-bold text-white text-lg drop-shadow-lg" id="headerTitle">{{ restaurant.name }}</span>
+            </div>
+            <div class="flex items-center gap-2">
+                <a href="?lang=fr" class="text-xs px-2 py-1 rounded-full font-medium transition-all
+                    {% if request.LANGUAGE_CODE == 'fr' %}bg-white text-gray-800{% else %}text-white/70 hover:text-white{% endif %}">FR</a>
+                <a href="?lang=en" class="text-xs px-2 py-1 rounded-full font-medium transition-all
+                    {% if request.LANGUAGE_CODE == 'en' %}bg-white text-gray-800{% else %}text-white/70 hover:text-white{% endif %}">EN</a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="hero-section" id="hero">
+        <div class="hero-carousel" id="heroCarousel">
+            {% for cat_data in categories_with_items %}
+                {% for item in cat_data.items %}
+                    {% if item.image %}
+                        <img src="{{ item.image.url }}" class="hero-slide" alt="{{ item.name }}">
+                    {% endif %}
+                {% endfor %}
+            {% endfor %}
+            {% if not categories_with_items %}
+                <div class="hero-slide active" style="background: linear-gradient(135deg, var(--primary), var(--secondary));"></div>
+            {% endif %}
+        </div>
+        <div class="hero-overlay"></div>
+        <div class="hero-content">
+            {% if restaurant.logo %}
+                <img src="{{ restaurant.logo.url }}" alt="{{ restaurant.name }}" class="hero-logo">
+            {% else %}
+                <div class="hero-logo" style="background: var(--primary); display: flex; align-items: center; justify-content: center; font-size: 2.5rem;">🍽️</div>
+            {% endif %}
+            <h1 class="hero-title">{{ restaurant.name }}</h1>
+            {% if restaurant.description %}
+                <p class="hero-subtitle">{{ restaurant.description }}</p>
+            {% endif %}
+            <p style="color: rgba(255,255,255,0.7); font-size: 0.85rem;">
+                <i class="fas fa-utensils"></i> {{ total_items }} plats à découvrir
+            </p>
+        </div>
+        <div class="hero-scroll-indicator" onclick="document.getElementById('categories').scrollIntoView({behavior:'smooth'})">
+            <i class="fas fa-chevron-down"></i>
+        </div>
+    </section>
+
+    <!-- Categories -->
+    <section class="categories-section" id="categories">
+        <h2 class="section-title">Notre Menu</h2>
+        <div class="categories-grid" id="categoriesGrid">
+            {% for cat_data in categories_with_items %}
+            <div class="category-card" onclick="openCategoryModal({{ cat_data.category.id }})">
+                <div class="category-card-image">
+                    {% with first_item=cat_data.items.first %}
+                        {% if first_item.image %}
+                            <img src="{{ first_item.image.url }}" alt="{{ cat_data.category.name }}">
+                        {% else %}
+                            <div class="placeholder-img">
+                                {% if 'boisson' in cat_data.category.name|lower or 'drink' in cat_data.category.name|lower %}🍷
+                                {% elif 'dessert' in cat_data.category.name|lower %}🍰
+                                {% elif 'entrée' in cat_data.category.name|lower or 'starter' in cat_data.category.name|lower %}🥗
+                                {% else %}🍖{% endif %}
+                            </div>
+                        {% endif %}
+                    {% endwith %}
+                </div>
+                <div class="category-card-body">
+                    <h3 class="category-card-title">{{ cat_data.category.name }}</h3>
+                    <p class="category-card-count">
+                        <i class="fas fa-utensils"></i> {{ cat_data.total_items }} {{ cat_data.category.name }}
+                    </p>
+                    <div class="category-card-arrow"><i class="fas fa-arrow-right"></i></div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        
+        {% if has_more %}
+        <button class="load-more-btn" id="loadMoreBtn" onclick="loadMoreCategories()">
+            <i class="fas fa-plus"></i> Voir plus de catégories
+        </button>
+        {% endif %}
+    </section>
+
+    <!-- Modal -->
+    <div class="modal-overlay" id="categoryModal">
+        <div class="modal-container">
+            <div class="modal-header">
+                <h3 class="modal-title" id="modalTitle"></h3>
+                <button class="modal-close" onclick="closeCategoryModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body" id="modalBody">
+                <p style="text-align:center; color:#9ca3af; padding: 2rem;">
+                    <i class="fas fa-spinner fa-spin"></i> Chargement...
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="app-footer">
+        <p>Menu digital par <span>QR Menu</span></p>
+        {% if restaurant.phone %}
+            <p style="margin-top: 0.3rem;">📞 {{ restaurant.phone }}</p>
+        {% endif %}
+    </footer>
+
+    <script>
+        const UUID = "{{ qr_uuid }}";
+        let categoriesOffset = {{ categories_with_items|length }};
+        let hasMoreCategories = {{ has_more|yesno:"true,false" }};
+
+        // Hero carousel
+        const slides = document.querySelectorAll('.hero-slide');
+        let currentSlide = 0;
+        if (slides.length > 0) {
+            slides[0].classList.add('active');
+            if (slides.length > 1) {
+                setInterval(() => {
+                    slides[currentSlide].classList.remove('active');
+                    currentSlide = (currentSlide + 1) % slides.length;
+                    slides[currentSlide].classList.add('active');
+                }, 4000);
+            }
+        }
+
+        // Header scroll effect
+        const header = document.getElementById('mainHeader');
+        const headerTitle = document.getElementById('headerTitle');
+        window.addEventListener('scroll', () => {
+            const heroHeight = document.getElementById('hero').offsetHeight;
+            if (window.scrollY > heroHeight - 100) {
+                header.style.background = 'rgba(255,255,255,0.95)';
+                header.style.backdropFilter = 'blur(10px)';
+                header.style.boxShadow = '0 2px 20px rgba(0,0,0,0.1)';
+                header.style.padding = '0.7rem 1.5rem';
+                if (headerTitle) {
+                    headerTitle.style.color = 'var(--text)';
+                    headerTitle.style.textShadow = 'none';
+                }
+            } else {
+                header.style.background = 'rgba(255,255,255,0)';
+                header.style.backdropFilter = 'none';
+                header.style.boxShadow = 'none';
+                header.style.padding = '1rem 1.5rem';
+                if (headerTitle) {
+                    headerTitle.style.color = 'white';
+                    headerTitle.style.textShadow = '0 2px 10px rgba(0,0,0,0.5)';
+                }
+            }
+        });
+
+        // Load more categories
+        async function loadMoreCategories() {
+            const btn = document.getElementById('loadMoreBtn');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Chargement...';
+            
+            try {
+                const response = await fetch(`/api/m/${UUID}/categories/?offset=${categoriesOffset}`);
+                const data = await response.json();
+                
+                const grid = document.getElementById('categoriesGrid');
+                data.categories.forEach((cat, index) => {
+                    const card = createCategoryCard(cat, index);
+                    grid.appendChild(card);
+                });
+                
+                categoriesOffset = data.next_offset;
+                hasMoreCategories = data.has_more;
+                
+                if (!hasMoreCategories) {
+                    btn.style.display = 'none';
+                }
+            } catch (err) {
+                console.error('Erreur chargement catégories:', err);
+                btn.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Réessayer';
+            } finally {
+                btn.disabled = false;
+                if (hasMoreCategories) {
+                    btn.innerHTML = '<i class="fas fa-plus"></i> Voir plus de catégories';
+                }
+            }
+        }
+
+        function createCategoryCard(cat, index) {
+            const div = document.createElement('div');
+            div.className = 'category-card';
+            div.style.animationDelay = (index * 0.1) + 's';
+            div.onclick = () => openCategoryModal(cat.id);
+            
+            let icon = '🍖';
+            const nameLower = cat.name.toLowerCase();
+            if (nameLower.includes('boisson') || nameLower.includes('drink')) icon = '🍷';
+            else if (nameLower.includes('dessert')) icon = '🍰';
+            else if (nameLower.includes('entrée') || nameLower.includes('starter')) icon = '🥗';
+            
+            const firstImage = cat.items.length > 0 && cat.items[0].image_url 
+                ? `<img src="${cat.items[0].image_url}" alt="${cat.name}">`
+                : `<div class="placeholder-img">${icon}</div>`;
+            
+            div.innerHTML = `
+                <div class="category-card-image">${firstImage}</div>
+                <div class="category-card-body">
+                    <h3 class="category-card-title">${cat.name}</h3>
+                    <p class="category-card-count">
+                        <i class="fas fa-utensils"></i> ${cat.item_count} ${cat.name}
+                    </p>
+                    <div class="category-card-arrow"><i class="fas fa-arrow-right"></i></div>
+                </div>
+            `;
+            return div;
+        }
+
+        // Modal
+        async function openCategoryModal(categoryId) {
+            const modal = document.getElementById('categoryModal');
+            const title = document.getElementById('modalTitle');
+            const body = document.getElementById('modalBody');
+            
+            modal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+            title.textContent = 'Chargement...';
+            body.innerHTML = '<p style="text-align:center; color:#9ca3af; padding: 2rem;"><i class="fas fa-spinner fa-spin"></i> Chargement...</p>';
+            
+            try {
+                const response = await fetch(`/api/m/${UUID}/categories/${categoryId}/items/`);
+                const data = await response.json();
+                
+                // Récupérer le nom de la catégorie depuis la card
+                const card = document.querySelector(`.category-card[data-cat-id="${categoryId}"]`);
+                title.textContent = card ? card.querySelector('.category-card-title').textContent : 'Plats';
+                
+                if (data.items.length === 0) {
+                    body.innerHTML = '<p style="text-align:center; color:#9ca3af; padding: 2rem;">Aucun plat pour le moment.</p>';
+                } else {
+                    body.innerHTML = data.items.map(item => `
+                        <div class="modal-item">
+                            ${item.image_url 
+                                ? `<img src="${item.image_url}" alt="${item.name}" class="modal-item-image">`
+                                : `<div class="modal-item-image-placeholder">🍽️</div>`}
+                            <div class="modal-item-info">
+                                <h4 class="modal-item-name">${item.name}</h4>
+                                ${item.description ? `<p class="modal-item-desc">${item.description}</p>` : ''}
+                                <div class="modal-item-price">${item.price}€</div>
+                                <div class="modal-item-badges">
+                                    ${item.is_vegetarian ? '<span class="badge badge-veg">🌱 Végétarien</span>' : ''}
+                                    ${item.is_vegan ? '<span class="badge badge-veg">🌿 Végan</span>' : ''}
+                                    ${item.is_gluten_free ? '<span class="badge badge-gluten">🌾 Sans gluten</span>' : ''}
+                                    ${item.allergens ? `<span class="badge badge-allergen">⚠️ ${item.allergens}</span>` : ''}
+                                </div>
+                            </div>
+                        </div>
+                    `).join('');
+                }
+            } catch (err) {
+                body.innerHTML = '<p style="text-align:center; color:#ef4444; padding: 2rem;">Erreur de chargement.</p>';
+            }
+        }
+
+        function closeCategoryModal() {
+            document.getElementById('categoryModal').classList.remove('active');
+            document.body.style.overflow = '';
+        }
+        document.getElementById('categoryModal').addEventListener('click', function(e) {
+            if (e.target === this) closeCategoryModal();
+        });
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') closeCategoryModal();
+        });
+    </script>
+</body>
+</html>

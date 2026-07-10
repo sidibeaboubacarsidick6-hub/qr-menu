@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}Supprimer {{ category.name }}{% endblock %}
+{% block content %}
+<div class="min-h-screen flex items-center justify-center bg-gray-100">
+    <div class="bg-white p-8 rounded-lg shadow-lg max-w-md text-center">
+        <p class="text-5xl mb-4">⚠️</p>
+        <h1 class="text-xl font-bold mb-2">Supprimer la catégorie ?</h1>
+        <p class="text-gray-600 mb-2"><strong>{{ category.name }}</strong></p>
+        <p class="text-red-600 text-sm mb-6">Tous les plats de cette catégorie seront supprimés.</p>
+        <form method="POST" class="flex gap-3 justify-center">
+            {% csrf_token %}
+            <a href="{% url 'menus:category_list' %}" class="bg-gray-300 px-6 py-2 rounded">Annuler</a>
+            <button type="submit" class="bg-red-600 text-white px-6 py-2 rounded">Supprimer</button>
+        </form>
+    </div>
+</div>
+{% endblock %}

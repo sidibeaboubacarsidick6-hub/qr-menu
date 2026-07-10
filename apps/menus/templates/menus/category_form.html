@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}{{ action }} une catégorie{% endblock %}
+{% block content %}
+<nav class="bg-white shadow-sm border-b">
+    <div class="max-w-7xl mx-auto px-4 py-3">
+        <a href="{% url 'menus:category_list' %}" class="text-gray-600 hover:text-gray-800">← Retour</a>
+    </div>
+</nav>
+<div class="max-w-2xl mx-auto px-4 py-8">
+    <h1 class="text-2xl font-bold mb-6">{{ action }} une catégorie</h1>
+    <div class="bg-white p-6 rounded-lg shadow">
+        <form method="POST" class="space-y-5">
+            {% csrf_token %}
+            <div>
+                <label class="block text-sm font-medium mb-1">Nom *</label>
+                {{ form.name }}
+            </div>
+            <div>
+                <label class="block text-sm font-medium mb-1">Description</label>
+                {{ form.description }}
+            </div>
+            <div>
+                <label class="block text-sm font-medium mb-1">Ordre</label>
+                {{ form.order }}
+            </div>
+            <div class="flex items-center gap-2">
+                {{ form.is_active }}
+                <label class="text-sm">Active</label>
+            </div>
+            <button type="submit" class="w-full bg-blue-600 text-white py-3 rounded-lg font-medium">{{ action }}</button>
+        </form>
+    </div>
+</div>
+{% endblock %}

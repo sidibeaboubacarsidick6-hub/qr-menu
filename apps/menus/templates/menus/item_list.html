@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}Plats - {{ restaurant.name }}{% endblock %}
+{% block content %}
+<nav class="bg-white shadow-sm border-b">
+    <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
+        <a href="{% url 'restaurants:dashboard' %}" class="text-gray-600 hover:text-gray-800">← Retour</a>
+        <span class="font-bold text-xl">🍽️ Plats</span>
+        <a href="{% url 'menus:item_create' %}" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">+ Ajouter</a>
+    </div>
+</nav>
+<div class="max-w-4xl mx-auto px-4 py-8">
+    {% if messages %}
+        {% for message in messages %}
+            <div class="mb-4 p-4 rounded-lg {% if message.tags == 'error' %}bg-red-100 text-red-700{% else %}bg-green-100 text-green-700{% endif %}">{{ message }}</div>
+        {% endfor %}
+    {% endif %}
+    {% if items %}
+        {% regroup items by category as category_list %}
+        {% for cat in category_list %}
+            <h2 class="text-lg font-bold text-gray-700 mt-6 mb-3">📂 {{ cat.grouper.name }}</h2>
+            {% for item in cat.list %}
+            <div class="bg-white p-4 rounded-lg shadow flex justify-between items-center mb-2">
+                <div>
+                    <h3 class="font-bold">{{ item.name }}</h3>
+                    <span class="font-bold text-blue-600">{{ item.price }}€</span>
+                    {% if not item.is_available %}<span class="text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded">Indisponible</span>{% endif %}
+                </div>
+                <div class="flex gap-2">
+                    <a href="{% url 'menus:item_update' item.pk %}" class="text-blue-600 border border-blue-300 px-3 py-1 rounded text-sm">Modifier</a>
+                    <a href="{% url 'menus:item_delete' item.pk %}" class="text-red-600 border border-red-300 px-3 py-1 rounded text-sm">Supprimer</a>
+                </div>
+            </div>
+            {% endfor %}
+        {% endfor %}
+    {% else %}
+        <div class="text-center py-12 bg-white rounded-lg shadow">
+            <p class="text-gray-500 mb-4">Aucun plat.</p>
+            <a href="{% url 'menus:item_create' %}" class="bg-blue-600 text-white px-6 py-3 rounded-lg">Ajouter un plat</a>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
