@@ -151,3 +151,25 @@ LOGOUT_REDIRECT_URL = 'restaurants:login'
 LOGIN_URL = 'restaurants:login'
 LOGIN_REDIRECT_URL = 'restaurants:dashboard'
 LOGOUT_REDIRECT_URL = 'restaurants:login'
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'file': {
+            'level': 'ERROR',
+            'class': 'logging.FileHandler',
+            'filename': BASE_DIR / 'logs' / 'errors.log',
+        },
+        'console': {
+            'class': 'logging.StreamHandler',
+        },
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['file', 'console'],
+            'level': 'ERROR',
+            'propagate': True,
+        },
+    },
+}
