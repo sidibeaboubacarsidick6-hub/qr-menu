@@ -6,11 +6,20 @@ from django.core.files.base import ContentFile
 from django.conf import settings
 
 
-def generate_qr_code(qr_instance, base_url="http://localhost:8000"):
+def generate_qr_code(qr_instance, base_url=None):
     """
     Génère une image QR code PNG pour une instance QRCode.
     L'URL encodée pointe vers la page publique du menu.
+
+    Par défaut, l'URL publique du site (settings.SITE_URL, définie via la
+    variable d'environnement SITE_URL) est utilisée. Sans cela, les QR codes
+    générés en production pointeraient vers "http://localhost:8000", ce qui
+    les rend inutilisables une fois imprimés/déployés.
     """
+    if base_url is None:
+        base_url = getattr(settings, 'SITE_URL', 'http://localhost:8000')
+    base_url = base_url.rstrip('/')
+
     menu_url = f"{base_url}/m/{qr_instance.uuid}/"
     
     # Création du QR code

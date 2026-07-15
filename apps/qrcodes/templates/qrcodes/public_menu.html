@@ -416,7 +416,7 @@
                 <p class="hero-subtitle">{{ restaurant.description }}</p>
             {% endif %}
             <p style="color: rgba(255,255,255,0.7); font-size: 0.85rem;">
-                <i class="fas fa-utensils"></i> {{ total_items }} plats à découvrir
+                <i class="fas fa-utensils"></i> {% blocktrans count counter=total_items %}{{ counter }} plat à découvrir{% plural %}{{ counter }} plats à découvrir{% endblocktrans %}
             </p>
         </div>
         <div class="hero-scroll-indicator" onclick="document.getElementById('categories').scrollIntoView({behavior:'smooth'})">
@@ -426,10 +426,10 @@
 
     <!-- Categories -->
     <section class="categories-section" id="categories">
-        <h2 class="section-title">Notre Menu</h2>
+        <h2 class="section-title">{% trans "Notre Menu" %}</h2>
         <div class="categories-grid" id="categoriesGrid">
             {% for cat_data in categories_with_items %}
-            <div class="category-card" onclick="openCategoryModal({{ cat_data.category.id }})">
+            <div class="category-card" data-cat-id="{{ cat_data.category.id }}" onclick="openCategoryModal({{ cat_data.category.id }}, '{{ cat_data.category.name|escapejs }}')">
                 <div class="category-card-image">
                     {% with first_item=cat_data.items.first %}
                         {% if first_item.image %}
@@ -447,17 +447,24 @@
                 <div class="category-card-body">
                     <h3 class="category-card-title">{{ cat_data.category.name }}</h3>
                     <p class="category-card-count">
-                        <i class="fas fa-utensils"></i> {{ cat_data.total_items }} {{ cat_data.category.name }}
+                        <i class="fas fa-utensils"></i> {{ cat_data.total_items }} {% trans "plat(s)" %}
                     </p>
                     <div class="category-card-arrow"><i class="fas fa-arrow-right"></i></div>
                 </div>
             </div>
             {% endfor %}
         </div>
-        
+
+        {% if not categories_with_items %}
+        <p style="text-align:center; color:#9ca3af; padding: 2rem;">
+            <strong>{% trans "Menu bientôt disponible" %}</strong><br>
+            {% trans "Le restaurateur est en train de préparer son menu." %}
+        </p>
+        {% endif %}
+
         {% if has_more %}
         <button class="load-more-btn" id="loadMoreBtn" onclick="loadMoreCategories()">
-            <i class="fas fa-plus"></i> Voir plus de catégories
+            <i class="fas fa-plus"></i> {% trans "Voir plus de catégories" %}
         </button>
         {% endif %}
     </section>
@@ -473,7 +480,7 @@
             </div>
             <div class="modal-body" id="modalBody">
                 <p style="text-align:center; color:#9ca3af; padding: 2rem;">
-                    <i class="fas fa-spinner fa-spin"></i> Chargement...
+                    <i class="fas fa-spinner fa-spin"></i> {% trans "Chargement..." %}
                 </p>
             </div>
         </div>
@@ -481,7 +488,7 @@
 
     <!-- Footer -->
     <footer class="app-footer">
-        <p>Menu digital par <span>QR Menu</span></p>
+        <p>{% trans "Menu digital par" %} <span>QR Menu</span></p>
         {% if restaurant.phone %}
             <p style="margin-top: 0.3rem;">📞 {{ restaurant.phone }}</p>
         {% endif %}
@@ -491,6 +498,20 @@
         const UUID = "{{ qr_uuid }}";
         let categoriesOffset = {{ categories_with_items|length }};
         let hasMoreCategories = {{ has_more|yesno:"true,false" }};
+
+        // Textes traduits côté serveur, utilisés par le JS qui génère du HTML
+        // dynamiquement (cartes de catégories chargées en AJAX, modale de plats).
+        const I18N = {
+            loading: "{% trans 'Chargement...' %}",
+            retry: "{% trans 'Réessayer' %}",
+            loadMore: "{% trans 'Voir plus de catégories' %}",
+            dishCount: "{% trans 'plat(s)' %}",
+            noItems: "{% trans 'Aucun plat pour le moment.' %}",
+            loadError: "{% trans 'Erreur de chargement.' %}",
+            vegetarian: "{% trans 'Végétarien' %}",
+            vegan: "{% trans 'Végan' %}",
+            glutenFree: "{% trans 'Sans gluten' %}",
+        };
 
         // Hero carousel
         const slides = document.querySelectorAll('.hero-slide');
@@ -532,12 +553,22 @@
             }
         });
 
+        // Échappement HTML : les noms/descriptions de plats et catégories
+        // viennent de la base (saisis par le restaurateur) et sont injectés
+        // via innerHTML ci-dessous. Sans échappement, un nom de plat contenant
+        // du HTML/JS serait exécuté dans le navigateur du client (XSS stocké).
+        function escapeHtml(value) {
+            const div = document.createElement('div');
+            div.textContent = value ?? '';
+            return div.innerHTML;
+        }
+
         // Load more categories
         async function loadMoreCategories() {
             const btn = document.getElementById('loadMoreBtn');
             btn.disabled = true;
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Chargement...';
-            
+            btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> ${I18N.loading}`;
+
             try {
                 const response = await fetch(`/api/m/${UUID}/categories/?offset=${categoriesOffset}`);
                 const data = await response.json();
@@ -556,11 +587,11 @@
                 }
             } catch (err) {
                 console.error('Erreur chargement catégories:', err);
-                btn.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Réessayer';
+                btn.innerHTML = `<i class="fas fa-exclamation-triangle"></i> ${I18N.retry}`;
             } finally {
                 btn.disabled = false;
                 if (hasMoreCategories) {
-                    btn.innerHTML = '<i class="fas fa-plus"></i> Voir plus de catégories';
+                    btn.innerHTML = `<i class="fas fa-plus"></i> ${I18N.loadMore}`;
                 }
             }
         }
@@ -568,8 +599,9 @@
         function createCategoryCard(cat, index) {
             const div = document.createElement('div');
             div.className = 'category-card';
+            div.dataset.catId = cat.id;
             div.style.animationDelay = (index * 0.1) + 's';
-            div.onclick = () => openCategoryModal(cat.id);
+            div.onclick = () => openCategoryModal(cat.id, cat.name);
             
             let icon = '🍖';
             const nameLower = cat.name.toLowerCase();
@@ -578,15 +610,15 @@
             else if (nameLower.includes('entrée') || nameLower.includes('starter')) icon = '🥗';
             
             const firstImage = cat.items.length > 0 && cat.items[0].image_url 
-                ? `<img src="${cat.items[0].image_url}" alt="${cat.name}">`
+                ? `<img src="${cat.items[0].image_url}" alt="${escapeHtml(cat.name)}">`
                 : `<div class="placeholder-img">${icon}</div>`;
             
             div.innerHTML = `
                 <div class="category-card-image">${firstImage}</div>
                 <div class="category-card-body">
-                    <h3 class="category-card-title">${cat.name}</h3>
+                    <h3 class="category-card-title">${escapeHtml(cat.name)}</h3>
                     <p class="category-card-count">
-                        <i class="fas fa-utensils"></i> ${cat.item_count} ${cat.name}
+                        <i class="fas fa-utensils"></i> ${cat.item_count} ${I18N.dishCount}
                     </p>
                     <div class="category-card-arrow"><i class="fas fa-arrow-right"></i></div>
                 </div>
@@ -595,48 +627,44 @@
         }
 
         // Modal
-        async function openCategoryModal(categoryId) {
+        async function openCategoryModal(categoryId, categoryName) {
             const modal = document.getElementById('categoryModal');
             const title = document.getElementById('modalTitle');
             const body = document.getElementById('modalBody');
             
             modal.classList.add('active');
             document.body.style.overflow = 'hidden';
-            title.textContent = 'Chargement...';
-            body.innerHTML = '<p style="text-align:center; color:#9ca3af; padding: 2rem;"><i class="fas fa-spinner fa-spin"></i> Chargement...</p>';
-            
+            title.textContent = categoryName || I18N.loading;
+            body.innerHTML = `<p style="text-align:center; color:#9ca3af; padding: 2rem;"><i class="fas fa-spinner fa-spin"></i> ${I18N.loading}</p>`;
+
             try {
                 const response = await fetch(`/api/m/${UUID}/categories/${categoryId}/items/`);
                 const data = await response.json();
-                
-                // Récupérer le nom de la catégorie depuis la card
-                const card = document.querySelector(`.category-card[data-cat-id="${categoryId}"]`);
-                title.textContent = card ? card.querySelector('.category-card-title').textContent : 'Plats';
-                
+
                 if (data.items.length === 0) {
-                    body.innerHTML = '<p style="text-align:center; color:#9ca3af; padding: 2rem;">Aucun plat pour le moment.</p>';
+                    body.innerHTML = `<p style="text-align:center; color:#9ca3af; padding: 2rem;">${I18N.noItems}</p>`;
                 } else {
                     body.innerHTML = data.items.map(item => `
                         <div class="modal-item">
                             ${item.image_url 
-                                ? `<img src="${item.image_url}" alt="${item.name}" class="modal-item-image">`
+                                ? `<img src="${item.image_url}" alt="${escapeHtml(item.name)}" class="modal-item-image">`
                                 : `<div class="modal-item-image-placeholder">🍽️</div>`}
                             <div class="modal-item-info">
-                                <h4 class="modal-item-name">${item.name}</h4>
-                                ${item.description ? `<p class="modal-item-desc">${item.description}</p>` : ''}
+                                <h4 class="modal-item-name">${escapeHtml(item.name)}</h4>
+                                ${item.description ? `<p class="modal-item-desc">${escapeHtml(item.description)}</p>` : ''}
                                 <div class="modal-item-price">${item.price}€</div>
                                 <div class="modal-item-badges">
-                                    ${item.is_vegetarian ? '<span class="badge badge-veg">🌱 Végétarien</span>' : ''}
-                                    ${item.is_vegan ? '<span class="badge badge-veg">🌿 Végan</span>' : ''}
-                                    ${item.is_gluten_free ? '<span class="badge badge-gluten">🌾 Sans gluten</span>' : ''}
-                                    ${item.allergens ? `<span class="badge badge-allergen">⚠️ ${item.allergens}</span>` : ''}
+                                    ${item.is_vegetarian ? `<span class="badge badge-veg">🌱 ${I18N.vegetarian}</span>` : ''}
+                                    ${item.is_vegan ? `<span class="badge badge-veg">🌿 ${I18N.vegan}</span>` : ''}
+                                    ${item.is_gluten_free ? `<span class="badge badge-gluten">🌾 ${I18N.glutenFree}</span>` : ''}
+                                    ${item.allergens ? `<span class="badge badge-allergen">⚠️ ${escapeHtml(item.allergens)}</span>` : ''}
                                 </div>
                             </div>
                         </div>
                     `).join('');
                 }
             } catch (err) {
-                body.innerHTML = '<p style="text-align:center; color:#ef4444; padding: 2rem;">Erreur de chargement.</p>';
+                body.innerHTML = `<p style="text-align:center; color:#ef4444; padding: 2rem;">${I18N.loadError}</p>`;
             }
         }
 
