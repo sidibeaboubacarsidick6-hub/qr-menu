@@ -88,17 +88,12 @@ MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
-
-    # Gestion automatique de la langue
     'django.middleware.locale.LocaleMiddleware',
-
-    # Middlewares personnalisés
     'apps.qrcodes.middleware.RestaurantLanguageMiddleware',
-    'apps.restaurants.middleware.RedirectAuthenticatedRestaurantMiddleware',
-
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'apps.restaurants.middleware.RedirectAuthenticatedRestaurantMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
