@@ -1,3 +1,4 @@
+{% load i18n %}
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -5,8 +6,166 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}QR Menu{% endblock %}</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        :root {
+            --qm-primary: #4f46e5;
+            --qm-primary-dark: #4338ca;
+            --qm-secondary: #7c3aed;
+            --qm-success: #10b981;
+            --qm-danger: #ef4444;
+            --qm-bg: #f8f9fc;
+        }
+        * { box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
+        body {
+            font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+            background-color: var(--qm-bg);
+        }
+
+        @keyframes qmFadeInUp {
+            from { opacity: 0; transform: translateY(16px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .qm-animate { animation: qmFadeInUp 0.5s ease-out backwards; }
+
+        /* Navbar */
+        .qm-navbar {
+            background: rgba(255,255,255,0.85);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(0,0,0,0.06);
+            position: sticky;
+            top: 0;
+            z-index: 40;
+        }
+        .qm-navbar-brand {
+            font-weight: 800;
+            font-size: 1.15rem;
+            background: linear-gradient(135deg, var(--qm-primary), var(--qm-secondary));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+        .qm-back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            color: #6b7280;
+            font-weight: 500;
+            font-size: 0.9rem;
+            transition: color 0.2s;
+        }
+        .qm-back-link:hover { color: var(--qm-primary); }
+
+        /* Boutons */
+        .qm-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            font-weight: 600;
+            font-size: 0.9rem;
+            padding: 0.7rem 1.4rem;
+            border-radius: 12px;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-decoration: none;
+            white-space: nowrap;
+        }
+        .qm-btn-primary {
+            background: linear-gradient(135deg, var(--qm-primary), var(--qm-secondary));
+            color: white;
+            box-shadow: 0 4px 14px rgba(79,70,229,0.35);
+        }
+        .qm-btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(79,70,229,0.45); color: white; }
+        .qm-btn-secondary {
+            background: white;
+            color: #374151;
+            border: 1.5px solid #e5e7eb;
+        }
+        .qm-btn-secondary:hover { border-color: var(--qm-primary); color: var(--qm-primary); }
+        .qm-btn-danger {
+            background: #fef2f2;
+            color: var(--qm-danger);
+            border: 1.5px solid #fecaca;
+        }
+        .qm-btn-danger:hover { background: var(--qm-danger); color: white; }
+        .qm-btn-danger-solid {
+            background: var(--qm-danger);
+            color: white;
+        }
+        .qm-btn-danger-solid:hover { background: #dc2626; transform: translateY(-2px); }
+        .qm-btn-sm { padding: 0.45rem 0.9rem; font-size: 0.8rem; border-radius: 9px; }
+        .qm-btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none !important; }
+
+        /* Cartes */
+        .qm-card {
+            background: white;
+            border-radius: 18px;
+            box-shadow: 0 2px 12px rgba(15, 23, 42, 0.06);
+            border: 1px solid rgba(15, 23, 42, 0.04);
+        }
+        .qm-card-hover { transition: all 0.25s cubic-bezier(0.4,0,0.2,1); }
+        .qm-card-hover:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 28px rgba(15, 23, 42, 0.12);
+        }
+
+        /* Alertes */
+        .qm-alert {
+            display: flex;
+            align-items: center;
+            gap: 0.7rem;
+            padding: 0.9rem 1.1rem;
+            border-radius: 12px;
+            font-weight: 500;
+            font-size: 0.9rem;
+        }
+        .qm-alert-success { background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; }
+        .qm-alert-error { background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; }
+
+        /* États vides */
+        .qm-empty-state {
+            text-align: center;
+            padding: 3.5rem 1.5rem;
+            background: white;
+            border-radius: 18px;
+            border: 2px dashed #e5e7eb;
+        }
+        .qm-empty-state-icon {
+            width: 72px; height: 72px;
+            border-radius: 20px;
+            background: linear-gradient(135deg, #eef2ff, #f5f3ff);
+            color: var(--qm-primary);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.8rem;
+            margin: 0 auto 1.2rem;
+        }
+
+        /* Champs de formulaire natifs non stylés par les widgets (checkbox, fichier) */
+        input[type="checkbox"] {
+            width: 1.15rem; height: 1.15rem;
+            accent-color: var(--qm-primary);
+            cursor: pointer;
+        }
+        input[type="file"] {
+            width: 100%;
+            padding: 0.6rem;
+            border: 1.5px dashed #d1d5db;
+            border-radius: 12px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            background: #fafafa;
+        }
+        input[type="file"]:hover { border-color: var(--qm-primary); }
+
+        ::selection { background: rgba(79,70,229,0.2); }
+    </style>
 </head>
-<body class="bg-gray-50 min-h-screen">
+<body class="min-h-screen">
     {% block content %}{% endblock %}
 </body>
 </html>

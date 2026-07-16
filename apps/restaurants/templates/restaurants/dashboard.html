@@ -1,95 +1,184 @@
 <!-- apps/restaurants/templates/restaurants/dashboard.html -->
 {% extends "base.html" %}
+{% load i18n %}
 
 {% block title %}Dashboard - {{ restaurant.name }}{% endblock %}
 
 {% block content %}
+<style>
+    .stat-card {
+        position: relative;
+        overflow: hidden;
+        padding: 1.5rem;
+    }
+    .stat-card-icon {
+        width: 46px; height: 46px;
+        border-radius: 13px;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 1.1rem;
+        margin-bottom: 0.9rem;
+    }
+    .stat-icon-indigo { background: #eef2ff; color: #4f46e5; }
+    .stat-icon-violet { background: #f5f3ff; color: #7c3aed; }
+    .stat-icon-green { background: #ecfdf5; color: #10b981; }
+
+    .nav-tile {
+        display: block;
+        padding: 1.6rem;
+        text-decoration: none;
+        position: relative;
+        overflow: hidden;
+    }
+    .nav-tile-icon {
+        width: 54px; height: 54px;
+        border-radius: 15px;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 1.35rem;
+        color: white;
+        margin-bottom: 1rem;
+        transition: transform 0.3s ease;
+    }
+    .nav-tile:hover .nav-tile-icon { transform: scale(1.1) rotate(-4deg); }
+    .nav-tile-arrow {
+        position: absolute; top: 1.6rem; right: 1.6rem;
+        color: #d1d5db; font-size: 0.9rem;
+        transition: all 0.25s ease;
+    }
+    .nav-tile:hover .nav-tile-arrow { color: #4f46e5; transform: translateX(4px); }
+
+    .qr-frame {
+        background: linear-gradient(135deg, #eef2ff, #f5f3ff);
+        border-radius: 16px;
+        padding: 1.2rem;
+    }
+    .link-code {
+        background: #f3f4f6;
+        border: 1px solid #e5e7eb;
+        border-radius: 10px;
+        padding: 0.65rem 1rem;
+        font-size: 0.85rem;
+        color: #374151;
+        word-break: break-all;
+    }
+</style>
+
 <!-- Navbar -->
-<nav class="bg-white shadow-sm border-b">
+<nav class="qm-navbar">
     <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
         <div class="flex items-center gap-3">
             {% if restaurant.logo %}
-                <img src="{{ restaurant.logo.url }}" alt="{{ restaurant.name }}" class="w-10 h-10 rounded-full object-cover">
+                <img src="{{ restaurant.logo.url }}" alt="{{ restaurant.name }}" class="w-10 h-10 rounded-full object-cover ring-2 ring-white shadow">
+            {% else %}
+                <div class="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-violet-500 flex items-center justify-center text-white">
+                    <i class="fas fa-utensils text-sm"></i>
+                </div>
             {% endif %}
-            <span class="font-bold text-xl text-gray-800">{{ restaurant.name }}</span>
+            <span class="font-bold text-lg text-gray-800">{{ restaurant.name }}</span>
         </div>
-        <div class="flex items-center gap-4">
-            <a href="{% url 'restaurants:logout' %}" class="text-red-600 hover:text-red-800 font-medium">
-                Déconnexion
-            </a>
-        </div>
+        <a href="{% url 'restaurants:logout' %}" class="qm-btn qm-btn-secondary qm-btn-sm">
+            <i class="fas fa-arrow-right-from-bracket"></i>
+            <span class="hidden sm:inline">Déconnexion</span>
+        </a>
     </div>
 </nav>
 
 <div class="max-w-7xl mx-auto px-4 py-8">
-    
+
     <!-- Messages -->
     {% if messages %}
         {% for message in messages %}
-            <div class="mb-6 p-4 rounded-lg {% if message.tags == 'error' %}bg-red-100 text-red-700{% else %}bg-green-100 text-green-700{% endif %}">
-                {{ message }}
+            <div class="qm-alert {% if message.tags == 'error' %}qm-alert-error{% else %}qm-alert-success{% endif %} mb-6 qm-animate">
+                <i class="fas {% if message.tags == 'error' %}fa-circle-exclamation{% else %}fa-circle-check{% endif %}"></i>
+                <span>{{ message }}</span>
             </div>
         {% endfor %}
     {% endif %}
 
+    <div class="mb-8 qm-animate">
+        <h1 class="text-2xl font-extrabold text-gray-800">Bonjour 👋</h1>
+        <p class="text-gray-500 mt-1">Voici un aperçu de votre menu digital.</p>
+    </div>
+
     <!-- Stats -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <div class="bg-white p-6 rounded-lg shadow">
-            <p class="text-gray-500 text-sm">Catégories</p>
-            <p class="text-3xl font-bold text-gray-800">{{ stats.categories_count }}</p>
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-5 mb-8">
+        <div class="qm-card qm-card-hover stat-card qm-animate" style="animation-delay: 0.05s">
+            <div class="stat-card-icon stat-icon-indigo"><i class="fas fa-layer-group"></i></div>
+            <p class="text-gray-500 text-sm font-medium">Catégories</p>
+            <p class="text-3xl font-extrabold text-gray-800">{{ stats.categories_count }}</p>
         </div>
-        <div class="bg-white p-6 rounded-lg shadow">
-            <p class="text-gray-500 text-sm">Plats total</p>
-            <p class="text-3xl font-bold text-gray-800">{{ stats.items_count }}</p>
+        <div class="qm-card qm-card-hover stat-card qm-animate" style="animation-delay: 0.1s">
+            <div class="stat-card-icon stat-icon-violet"><i class="fas fa-utensils"></i></div>
+            <p class="text-gray-500 text-sm font-medium">Plats au total</p>
+            <p class="text-3xl font-extrabold text-gray-800">{{ stats.items_count }}</p>
         </div>
-        <div class="bg-white p-6 rounded-lg shadow">
-            <p class="text-gray-500 text-sm">Plats disponibles</p>
-            <p class="text-3xl font-bold text-green-600">{{ stats.items_available }}</p>
+        <div class="qm-card qm-card-hover stat-card qm-animate" style="animation-delay: 0.15s">
+            <div class="stat-card-icon stat-icon-green"><i class="fas fa-circle-check"></i></div>
+            <p class="text-gray-500 text-sm font-medium">Plats disponibles</p>
+            <p class="text-3xl font-extrabold text-emerald-600">{{ stats.items_available }}</p>
         </div>
     </div>
 
     <!-- QR Code Section -->
     {% if qr_code and qr_code.qr_image %}
-    <div class="bg-white p-6 rounded-lg shadow mb-8">
-        <h2 class="text-xl font-bold text-gray-800 mb-4">📱 Votre QR Code</h2>
+    <div class="qm-card p-6 mb-8 qm-animate" style="animation-delay: 0.2s">
+        <h2 class="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+            <i class="fas fa-qrcode text-indigo-600"></i> Votre QR Code
+        </h2>
         <div class="flex flex-col md:flex-row items-center gap-6">
-            <div class="bg-gray-100 p-4 rounded-lg">
-                <img src="{{ qr_code.qr_image.url }}" alt="QR Code {{ restaurant.name }}" class="w-48 h-48">
+            <div class="qr-frame">
+                <img src="{{ qr_code.qr_image.url }}" alt="QR Code {{ restaurant.name }}" class="w-40 h-40 sm:w-48 sm:h-48 rounded-lg">
             </div>
-            <div>
-                <p class="text-gray-600 mb-2">Lien du menu :</p>
-                <code class="bg-gray-100 px-3 py-2 rounded text-sm block mb-3">
-                    {{ request.scheme }}://{{ request.get_host }}{{ qr_code.get_menu_url }}
-                </code>
-                <button onclick="navigator.clipboard.writeText('{{ request.scheme }}://{{ request.get_host }}{{ qr_code.get_menu_url }}')"
-                        class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 text-sm">
-                    📋 Copier le lien
-                </button>
-                <a href="{{ qr_code.qr_image.url }}" download
-                   class="ml-2 bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 text-sm inline-block">
-                    ⬇️ Télécharger QR Code
-                </a>
+            <div class="w-full">
+                <p class="text-gray-500 mb-2 text-sm">Lien de votre menu :</p>
+                <code class="link-code block mb-4" id="menuLink">{{ request.scheme }}://{{ request.get_host }}{{ qr_code.get_menu_url }}</code>
+                <div class="flex flex-wrap gap-2">
+                    <button onclick="copyMenuLink(this)"
+                            class="qm-btn qm-btn-secondary qm-btn-sm">
+                        <i class="fas fa-copy"></i> Copier le lien
+                    </button>
+                    <a href="{{ qr_code.qr_image.url }}" download class="qm-btn qm-btn-primary qm-btn-sm">
+                        <i class="fas fa-download"></i> Télécharger le QR
+                    </a>
+                    <a href="{{ request.scheme }}://{{ request.get_host }}{{ qr_code.get_menu_url }}" target="_blank"
+                       class="qm-btn qm-btn-secondary qm-btn-sm">
+                        <i class="fas fa-arrow-up-right-from-square"></i> Voir mon menu
+                    </a>
+                </div>
             </div>
         </div>
     </div>
+    <script>
+        function copyMenuLink(btn) {
+            const text = document.getElementById('menuLink').textContent.trim();
+            navigator.clipboard.writeText(text).then(() => {
+                const original = btn.innerHTML;
+                btn.innerHTML = '<i class="fas fa-check"></i> Copié !';
+                setTimeout(() => { btn.innerHTML = original; }, 1800);
+            });
+        }
+    </script>
     {% endif %}
 
     <!-- Navigation rapide -->
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <!-- Gérer les catégories -->
-        <a href="{% url 'menus:category_list' %}" 
-           class="bg-white p-6 rounded-lg shadow hover:shadow-lg transition border-2 border-transparent hover:border-blue-500">
-            <div class="text-4xl mb-3">📂</div>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+        <a href="{% url 'menus:category_list' %}"
+           class="qm-card qm-card-hover nav-tile qm-animate" style="animation-delay: 0.25s">
+            <div class="nav-tile-icon" style="background: linear-gradient(135deg, #4f46e5, #6366f1);">
+                <i class="fas fa-layer-group"></i>
+            </div>
+            <i class="fas fa-arrow-right nav-tile-arrow"></i>
             <h3 class="text-lg font-bold text-gray-800">Gérer les catégories</h3>
-            <p class="text-gray-600 text-sm mt-1">Entrées, Plats, Desserts...</p>
+            <p class="text-gray-500 text-sm mt-1">Entrées, plats, desserts, boissons...</p>
         </a>
-        
-        <!-- Gérer les plats -->
-        <a href="{% url 'menus:item_list' %}" 
-           class="bg-white p-6 rounded-lg shadow hover:shadow-lg transition border-2 border-transparent hover:border-green-500">
-            <div class="text-4xl mb-3">🍽️</div>
+
+        <a href="{% url 'menus:item_list' %}"
+           class="qm-card qm-card-hover nav-tile qm-animate" style="animation-delay: 0.3s">
+            <div class="nav-tile-icon" style="background: linear-gradient(135deg, #7c3aed, #a855f7);">
+                <i class="fas fa-utensils"></i>
+            </div>
+            <i class="fas fa-arrow-right nav-tile-arrow"></i>
             <h3 class="text-lg font-bold text-gray-800">Gérer les plats</h3>
-            <p class="text-gray-600 text-sm mt-1">Ajouter, modifier, supprimer</p>
+            <p class="text-gray-500 text-sm mt-1">Ajouter, modifier, activer/désactiver</p>
         </a>
     </div>
 </div>
