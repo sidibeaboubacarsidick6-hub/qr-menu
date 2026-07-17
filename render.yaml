@@ -1,0 +1,44 @@
+services:
+  - type: web
+    name: qr-menu
+    runtime: python
+    plan: free
+    region: frankfurt
+    branch: main
+    buildCommand: "pip install -r requirements.txt && python manage.py migrate --noinput && python manage.py collectstatic --noinput && (python manage.py createsuperuser --noinput || true)"
+    startCommand: "gunicorn qr_menu.wsgi"
+    envVars:
+      # Générée automatiquement par Render, en toute sécurité :
+      # aucun copier-coller manuel, donc aucun risque d'erreur.
+      - key: SECRET_KEY
+        generateValue: true
+
+      - key: DEBUG
+        value: "False"
+
+      - key: PYTHON_VERSION
+        value: "3.12.3"
+
+      - key: SECURE_SSL_REDIRECT
+        value: "True"
+
+      # ALLOWED_HOSTS / SITE_URL / CSRF_TRUSTED_ORIGINS ne sont PAS listées ici :
+      # elles sont déduites automatiquement par qr_menu/settings.py à partir de
+      # RENDER_EXTERNAL_HOSTNAME (fournie nativement par Render). Inutile donc
+      # de connaître à l'avance l'URL exacte du service.
+
+      # sync: false => Render affichera un champ vide à remplir UNE SEULE FOIS
+      # au moment de la création du service (copier-coller la connection
+      # string Neon ici, à cet unique endroit).
+      - key: DATABASE_URL
+        sync: false
+
+      # Optionnel : remplis ces 3 valeurs pour que le compte Super Admin soit
+      # créé automatiquement au premier déploiement (sinon, il faudra utiliser
+      # une autre méthode, le Shell n'étant pas disponible sur le plan Free).
+      - key: DJANGO_SUPERUSER_USERNAME
+        sync: false
+      - key: DJANGO_SUPERUSER_EMAIL
+        sync: false
+      - key: DJANGO_SUPERUSER_PASSWORD
+        sync: false

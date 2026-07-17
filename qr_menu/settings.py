@@ -1,6 +1,7 @@
 import os
 from pathlib import Path
 from django.utils.translation import gettext_lazy as _
+import dj_database_url
 
 
 # Base directory
@@ -12,7 +13,20 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = os.getenv('SECRET_KEY', 'dev-secret-change-me')
 DEBUG = os.getenv('DEBUG', 'False') == 'True'
-ALLOWED_HOSTS = [h.strip() for h in os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',') if h.strip()]
+
+# Render fournit automatiquement le nom de domaine réel du service
+# (ex: qr-menu-503o.onrender.com) via cette variable, sans configuration
+# manuelle. On s'en sert comme valeur par défaut intelligente pour
+# ALLOWED_HOSTS / SITE_URL / CSRF_TRUSTED_ORIGINS : ça évite d'avoir à
+# recopier à la main l'URL exacte (source d'erreurs de copier-coller).
+# Ces 3 variables restent surchageables manuellement si besoin (ex: nom de
+# domaine personnalisé).
+RENDER_EXTERNAL_HOSTNAME = os.getenv('RENDER_EXTERNAL_HOSTNAME')
+
+_default_allowed_hosts = 'localhost,127.0.0.1'
+if RENDER_EXTERNAL_HOSTNAME:
+    _default_allowed_hosts += f',{RENDER_EXTERNAL_HOSTNAME}'
+ALLOWED_HOSTS = [h.strip() for h in os.getenv('ALLOWED_HOSTS', _default_allowed_hosts).split(',') if h.strip()]
 
 # Refuse de démarrer en production avec la clé de développement par défaut.
 if not DEBUG and SECRET_KEY == 'dev-secret-change-me':
@@ -23,11 +37,14 @@ if not DEBUG and SECRET_KEY == 'dev-secret-change-me':
 
 # URL publique du site (utilisée notamment pour générer les QR codes).
 # En production, définissez SITE_URL=https://votre-domaine.tld dans le .env
-SITE_URL = os.getenv('SITE_URL', 'http://localhost:8000').rstrip('/')
+# (déduite automatiquement sur Render si non définie explicitement).
+_default_site_url = f'https://{RENDER_EXTERNAL_HOSTNAME}' if RENDER_EXTERNAL_HOSTNAME else 'http://localhost:8000'
+SITE_URL = os.getenv('SITE_URL', _default_site_url).rstrip('/')
 
 # Origines de confiance pour le CSRF (nécessaire derrière un reverse proxy HTTPS).
+_default_csrf_origins = f'https://{RENDER_EXTERNAL_HOSTNAME}' if RENDER_EXTERNAL_HOSTNAME else ''
 CSRF_TRUSTED_ORIGINS = [
-    o.strip() for o in os.getenv('CSRF_TRUSTED_ORIGINS', '').split(',') if o.strip()
+    o.strip() for o in os.getenv('CSRF_TRUSTED_ORIGINS', _default_csrf_origins).split(',') if o.strip()
 ]
 
 # Durcissement de sécurité activé automatiquement hors mode DEBUG.
@@ -88,12 +105,21 @@ MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+
+    # Gestion automatique de la langue
     'django.middleware.locale.LocaleMiddleware',
+
+    # Middleware personnalisé (langue par restaurant)
     'apps.qrcodes.middleware.RestaurantLanguageMiddleware',
+
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+
+    # Doit impérativement venir APRÈS AuthenticationMiddleware :
+    # il utilise request.user, qui n'existe pas avant.
     'apps.restaurants.middleware.RedirectAuthenticatedRestaurantMiddleware',
+
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
@@ -128,16 +154,58 @@ WSGI_APPLICATION = 'qr_menu.wsgi.application'
 # Base de données
 # ==========================
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.getenv('DB_NAME', 'qrmenu'),
-        'USER': os.getenv('DB_USER', 'qrmenu_user'),
-        'PASSWORD': os.getenv('DB_PASSWORD', ''),
-        'HOST': os.getenv('DB_HOST', 'localhost'),
-        'PORT': os.getenv('DB_PORT', '5432'),
+# Deux modes pris en charge :
+# - DATABASE_URL (Neon, Render, Railway... fournissent une seule URL de connexion,
+#   ex: postgres://user:pass@host/dbname?sslmode=require) -> utilisé en priorité.
+# - Variables séparées DB_NAME / DB_USER / DB_PASSWORD / DB_HOST / DB_PORT,
+#   pratiques en développement local.
+#
+# Nettoyage défensif : un copier-coller depuis l'interface web d'un hébergeur
+# ajoute parfois des guillemets ou des espaces invisibles en début/fin de valeur.
+DATABASE_URL = (os.getenv('DATABASE_URL') or '').strip().strip('"').strip("'")
+
+# Render définit automatiquement la variable RENDER=true sur tous les services
+# qu'il héberge. On s'en sert pour détecter qu'on tourne sur Render et EXIGER
+# une DATABASE_URL valide, plutôt que de se rabattre silencieusement sur
+# "localhost" (qui n'existe pas sur Render et produit une erreur psycopg2
+# cryptique au lieu d'un message clair).
+IS_RENDER = os.getenv('RENDER') == 'true'
+
+if IS_RENDER and not DATABASE_URL:
+    raise RuntimeError(
+        "DATABASE_URL est manquante ou vide alors que l'application tourne sur Render. "
+        "Va dans Render -> ton service -> Environment, et vérifie que la variable "
+        "DATABASE_URL contient bien la connection string PostgreSQL complète "
+        "(fournie par Neon), sans guillemets ni espace autour."
+    )
+
+if DATABASE_URL and not DATABASE_URL.startswith(('postgres://', 'postgresql://')):
+    raise RuntimeError(
+        f"DATABASE_URL ne ressemble pas à une URL PostgreSQL valide "
+        f"(elle devrait commencer par 'postgresql://'). Valeur actuelle : "
+        f"{DATABASE_URL[:15]}... Vérifie qu'aucun caractère n'a été perdu ou "
+        f"ajouté lors du copier-coller dans Render."
+    )
+
+if DATABASE_URL:
+    DATABASES = {
+        'default': dj_database_url.parse(
+            DATABASE_URL,
+            conn_max_age=600,
+            ssl_require=os.getenv('DB_SSL_REQUIRE', 'True') == 'True',
+        )
     }
-}
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': os.getenv('DB_NAME', 'qrmenu'),
+            'USER': os.getenv('DB_USER', 'qrmenu_user'),
+            'PASSWORD': os.getenv('DB_PASSWORD', ''),
+            'HOST': os.getenv('DB_HOST', 'localhost'),
+            'PORT': os.getenv('DB_PORT', '5432'),
+        }
+    }
 
 # ==========================
 # Validation des mots de passe
