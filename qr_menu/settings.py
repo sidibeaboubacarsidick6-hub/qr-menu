@@ -254,10 +254,20 @@ if USE_R2:
     # Cloudflare R2 rejette avec une erreur 400 Bad Request -- typiquement
     # sur les appels HeadObject (utilisés notamment pour vérifier si un
     # fichier existe déjà, comme lors de la régénération d'un QR code portant
-    # toujours le même nom). On désactive ce comportement via les variables
-    # d'environnement officiellement supportées par botocore pour ce cas.
-    os.environ.setdefault('AWS_REQUEST_CHECKSUM_CALCULATION', 'when_required')
-    os.environ.setdefault('AWS_RESPONSE_CHECKSUM_VALIDATION', 'when_required')
+    # toujours le même nom).
+    #
+    # On désactive ce comportement via un objet botocore.config.Config
+    # explicite (AWS_S3_CLIENT_CONFIG), plus fiable que les variables
+    # d'environnement : django-storages construit sinon sa propre Config par
+    # défaut et ignore silencieusement certains réglages définis autrement.
+    from botocore.config import Config as _BotoConfig
+
+    AWS_S3_CLIENT_CONFIG = _BotoConfig(
+        signature_version='s3v4',
+        s3={'addressing_style': 'auto'},
+        request_checksum_calculation='when_required',
+        response_checksum_validation='when_required',
+    )
 
     R2_ACCOUNT_ID = os.getenv('R2_ACCOUNT_ID')
     AWS_ACCESS_KEY_ID = os.getenv('R2_ACCESS_KEY_ID')
@@ -272,7 +282,9 @@ if USE_R2:
     )
     AWS_S3_REGION_NAME = 'auto'
     AWS_DEFAULT_ACL = None
-    AWS_S3_SIGNATURE_VERSION = 's3v4'
+    # NB : AWS_S3_SIGNATURE_VERSION n'est plus utilisé ici -- il est inclus
+    # directement dans AWS_S3_CLIENT_CONFIG ci-dessus, qui remplace
+    # entièrement la Config par défaut que django-storages aurait construite.
     AWS_QUERYSTRING_AUTH = False  # URLs publiques propres, sans token d'expiration
     AWS_S3_FILE_OVERWRITE = False  # évite d'écraser un fichier existant portant le même nom
 
