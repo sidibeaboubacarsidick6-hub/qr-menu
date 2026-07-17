@@ -91,6 +91,9 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
 
+    # Stockage fichiers médias sur Cloudflare R2 (compatible S3)
+    'storages',
+
     # Applications du projet
     'apps.restaurants',
     'apps.menus',
@@ -230,18 +233,58 @@ STATICFILES_DIRS = [
 
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
-STORAGES = {
-    "default": {
-        "BACKEND": "django.core.files.storage.FileSystemStorage",
-    },
-    "staticfiles": {
-        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
-    },
-}
+# ==========================
+# Fichiers médias (Cloudflare R2)
+# ==========================
 
-# ==========================
-# Fichiers médias
-# ==========================
+# USE_R2 est activé automatiquement dès que R2_ACCOUNT_ID est défini dans
+# l'environnement (local via .env, ou sur Render via Environment).
+# Sans ces variables, l'app retombe sur le stockage disque local classique
+# (pratique en dev si tu ne veux pas configurer R2 tout de suite).
+USE_R2 = bool(os.getenv('R2_ACCOUNT_ID'))
+
+if USE_R2:
+    R2_ACCOUNT_ID = os.getenv('R2_ACCOUNT_ID')
+    AWS_ACCESS_KEY_ID = os.getenv('R2_ACCESS_KEY_ID')
+    AWS_SECRET_ACCESS_KEY = os.getenv('R2_SECRET_ACCESS_KEY')
+    AWS_STORAGE_BUCKET_NAME = os.getenv('R2_BUCKET_NAME')
+    AWS_S3_ENDPOINT_URL = f'https://{R2_ACCOUNT_ID}.r2.cloudflarestorage.com'
+    AWS_S3_CUSTOM_DOMAIN = (
+        os.getenv('R2_PUBLIC_URL', '')
+        .replace('https://', '')
+        .replace('http://', '')
+        .rstrip('/')
+    )
+    AWS_S3_REGION_NAME = 'auto'
+    AWS_DEFAULT_ACL = None
+    AWS_S3_SIGNATURE_VERSION = 's3v4'
+    AWS_QUERYSTRING_AUTH = False  # URLs publiques propres, sans token d'expiration
+    AWS_S3_FILE_OVERWRITE = False  # évite d'écraser un fichier existant portant le même nom
+
+    STORAGES = {
+        "default": {
+            "BACKEND": "storages.backends.s3.S3Storage",
+        },
+        "staticfiles": {
+            "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+        },
+    }
+
+    if not all([AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_STORAGE_BUCKET_NAME, AWS_S3_CUSTOM_DOMAIN]):
+        raise RuntimeError(
+            "USE_R2 est activé (R2_ACCOUNT_ID détecté) mais une ou plusieurs variables "
+            "R2_ACCESS_KEY_ID / R2_SECRET_ACCESS_KEY / R2_BUCKET_NAME / R2_PUBLIC_URL "
+            "sont manquantes. Vérifie ton .env ou les variables d'environnement sur Render."
+        )
+else:
+    STORAGES = {
+        "default": {
+            "BACKEND": "django.core.files.storage.FileSystemStorage",
+        },
+        "staticfiles": {
+            "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+        },
+    }
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
