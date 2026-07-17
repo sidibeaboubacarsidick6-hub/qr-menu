@@ -652,7 +652,7 @@
                             <div class="modal-item-info">
                                 <h4 class="modal-item-name">${escapeHtml(item.name)}</h4>
                                 ${item.description ? `<p class="modal-item-desc">${escapeHtml(item.description)}</p>` : ''}
-                                <div class="modal-item-price">${item.price}€</div>
+                                <div class="modal-item-price">${Number(item.price).toLocaleString('fr-FR')} FCFA</div>
                                 <div class="modal-item-badges">
                                     ${item.is_vegetarian ? `<span class="badge badge-veg">🌱 ${I18N.vegetarian}</span>` : ''}
                                     ${item.is_vegan ? `<span class="badge badge-veg">🌿 ${I18N.vegan}</span>` : ''}

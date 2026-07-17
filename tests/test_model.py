@@ -42,10 +42,10 @@ class TestMenu:
         item = MenuItem.objects.create(
             category=cat,
             name='Salade',
-            price=9.99,
+            price=2500,
             is_vegetarian=True
         )
         assert cat.restaurant == resto
         assert item.category == cat
-        assert item.price == 9.99
+        assert item.price == 2500
         assert item.is_vegetarian is True

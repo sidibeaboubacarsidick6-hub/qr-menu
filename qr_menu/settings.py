@@ -77,6 +77,11 @@ USE_I18N = True
 USE_L10N = True
 USE_TZ = True
 
+# Le Franc CFA (FCFA) ne se subdivise pas en centimes dans l'usage courant ;
+# le séparateur de milliers (ex: "2 500 FCFA") améliore la lisibilité.
+USE_THOUSAND_SEPARATOR = True
+THOUSAND_SEPARATOR = ' '
+
 TIME_ZONE = os.getenv('TIME_ZONE', 'UTC')
 
 # ==========================

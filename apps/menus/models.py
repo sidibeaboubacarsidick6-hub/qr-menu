@@ -43,9 +43,9 @@ class MenuItem(models.Model):
     name = models.CharField(max_length=200, verbose_name="Nom du plat")
     description = models.TextField(blank=True, verbose_name="Description")
     price = models.DecimalField(
-        max_digits=8,
-        decimal_places=2,
-        verbose_name="Prix (€)"
+        max_digits=10,
+        decimal_places=0,
+        verbose_name="Prix (FCFA)"
     )
     image = models.ImageField(
         upload_to='menus/items/',
@@ -86,4 +86,4 @@ class MenuItem(models.Model):
         ordering = ['category', 'order', 'name']
 
     def __str__(self):
-        return f"{self.name} - {self.price}€"
+        return f"{self.name} - {self.price} FCFA"
