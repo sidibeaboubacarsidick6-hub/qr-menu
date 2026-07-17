@@ -249,6 +249,16 @@ STATIC_ROOT = BASE_DIR / 'staticfiles'
 USE_R2 = bool(os.getenv('R2_ACCOUNT_ID'))
 
 if USE_R2:
+    # Bug connu : les versions récentes de boto3/botocore envoient par défaut
+    # des en-têtes de vérification (checksums) sur les requêtes S3, que
+    # Cloudflare R2 rejette avec une erreur 400 Bad Request -- typiquement
+    # sur les appels HeadObject (utilisés notamment pour vérifier si un
+    # fichier existe déjà, comme lors de la régénération d'un QR code portant
+    # toujours le même nom). On désactive ce comportement via les variables
+    # d'environnement officiellement supportées par botocore pour ce cas.
+    os.environ.setdefault('AWS_REQUEST_CHECKSUM_CALCULATION', 'when_required')
+    os.environ.setdefault('AWS_RESPONSE_CHECKSUM_VALIDATION', 'when_required')
+
     R2_ACCOUNT_ID = os.getenv('R2_ACCOUNT_ID')
     AWS_ACCESS_KEY_ID = os.getenv('R2_ACCESS_KEY_ID')
     AWS_SECRET_ACCESS_KEY = os.getenv('R2_SECRET_ACCESS_KEY')
