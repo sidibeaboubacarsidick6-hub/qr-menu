@@ -264,7 +264,14 @@ if USE_R2:
 
     AWS_S3_CLIENT_CONFIG = _BotoConfig(
         signature_version='s3v4',
-        s3={'addressing_style': 'auto'},
+        # "path" force les requêtes vers
+        # https://<account_id>.r2.cloudflarestorage.com/<bucket>/<clé>
+        # plutôt que vers un sous-domaine par bucket
+        # (https://<bucket>.<account_id>.r2.cloudflarestorage.com/<clé>).
+        # Le réglage "auto" précédent pouvait mal choisir le style
+        # d'adressage pour cet endpoint, provoquant un 400 générique avant
+        # même d'atteindre l'API S3 de R2.
+        s3={'addressing_style': 'path'},
         request_checksum_calculation='when_required',
         response_checksum_validation='when_required',
     )
