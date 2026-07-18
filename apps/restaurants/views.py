@@ -3,6 +3,7 @@ from django.contrib.auth import login, authenticate, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from .models import Restaurant, QRCode
+from .forms import RestaurantAppearanceForm
 from apps.menus.models import Category, MenuItem
 
 
@@ -57,3 +58,26 @@ def logout_view(request):
     logout(request)
     messages.success(request, "Vous êtes déconnecté.")
     return redirect('restaurants:login')
+
+
+@login_required
+def customize_appearance(request):
+    try:
+        restaurant = request.user.restaurant
+    except Restaurant.DoesNotExist:
+        messages.error(request, "Aucun restaurant associé à votre compte. Contactez l'administrateur.")
+        return redirect('restaurants:login')
+
+    if request.method == 'POST':
+        form = RestaurantAppearanceForm(request.POST, instance=restaurant)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "L'apparence de votre menu a été mise à jour.")
+            return redirect('restaurants:customize_appearance')
+    else:
+        form = RestaurantAppearanceForm(instance=restaurant)
+
+    return render(request, 'restaurants/customize_appearance.html', {
+        'restaurant': restaurant,
+        'form': form,
+    })

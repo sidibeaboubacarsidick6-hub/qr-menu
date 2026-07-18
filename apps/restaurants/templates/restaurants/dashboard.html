@@ -160,7 +160,7 @@
     {% endif %}
 
     <!-- Navigation rapide -->
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
         <a href="{% url 'menus:category_list' %}"
            class="qm-card qm-card-hover nav-tile qm-animate" style="animation-delay: 0.25s">
             <div class="nav-tile-icon" style="background: linear-gradient(135deg, #4f46e5, #6366f1);">
@@ -179,6 +179,16 @@
             <i class="fas fa-arrow-right nav-tile-arrow"></i>
             <h3 class="text-lg font-bold text-gray-800">Gérer les plats</h3>
             <p class="text-gray-500 text-sm mt-1">Ajouter, modifier, activer/désactiver</p>
+        </a>
+
+        <a href="{% url 'restaurants:customize_appearance' %}"
+           class="qm-card qm-card-hover nav-tile qm-animate" style="animation-delay: 0.35s">
+            <div class="nav-tile-icon" style="background: linear-gradient(135deg, #ec4899, #f472b6);">
+                <i class="fas fa-palette"></i>
+            </div>
+            <i class="fas fa-arrow-right nav-tile-arrow"></i>
+            <h3 class="text-lg font-bold text-gray-800">Apparence du menu</h3>
+            <p class="text-gray-500 text-sm mt-1">Couleurs vues par vos clients</p>
         </a>
     </div>
 </div>

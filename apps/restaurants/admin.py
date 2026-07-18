@@ -33,9 +33,6 @@ class RestaurantAdmin(admin.ModelAdmin):
         ('Informations générales', {
             'fields': ('owner', 'name', 'slug', 'logo', 'address', 'phone', 'description')
         }),
-        ('Personnalisation du menu', {
-            'fields': ('primary_color', 'secondary_color', 'background_color', 'text_color', 'header_opacity'),
-        }),
         ('Abonnement', {
             'fields': ('subscription_end', 'is_active'),
             'description': 'Gérez l\'abonnement du restaurant.'

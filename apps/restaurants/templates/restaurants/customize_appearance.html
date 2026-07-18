@@ -1,0 +1,191 @@
+{% extends "base.html" %}
+{% block title %}Apparence du menu - {{ restaurant.name }}{% endblock %}
+{% block content %}
+<style>
+    .color-row {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        padding: 1rem 0;
+        border-bottom: 1px solid #f3f4f6;
+    }
+    .color-row:last-of-type { border-bottom: none; }
+    .color-swatch-wrapper {
+        position: relative;
+        width: 54px; height: 54px;
+        flex-shrink: 0;
+    }
+    .color-swatch-wrapper input[type="color"] {
+        width: 54px; height: 54px;
+        border: none;
+        border-radius: 14px;
+        cursor: pointer;
+        padding: 0;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+    }
+    .color-info h3 { font-weight: 700; color: #1e293b; font-size: 0.98rem; }
+    .color-info p { color: #6b7280; font-size: 0.85rem; margin-top: 0.15rem; }
+
+    .opacity-slider-row { padding: 1rem 0; }
+    input[type="range"] {
+        width: 100%;
+        accent-color: #4f46e5;
+        height: 6px;
+    }
+    .opacity-labels {
+        display: flex; justify-content: space-between;
+        font-size: 0.8rem; color: #9ca3af; margin-top: 0.4rem;
+    }
+
+    /* Aperçu en direct */
+    .preview-box {
+        border-radius: 18px;
+        overflow: hidden;
+        box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+        border: 1px solid #e5e7eb;
+    }
+    .preview-hero {
+        height: 130px;
+        background: linear-gradient(135deg, #d1d5db, #9ca3af);
+        display: flex; align-items: flex-end;
+        padding: 1rem;
+        position: relative;
+    }
+    .preview-hero-overlay {
+        position: absolute; inset: 0;
+        background: black;
+    }
+    .preview-hero-text {
+        position: relative; z-index: 2;
+        color: white; font-weight: 800; font-size: 1.1rem;
+    }
+    .preview-body {
+        padding: 1.2rem;
+    }
+    .preview-btn {
+        display: inline-block;
+        padding: 0.5rem 1rem;
+        border-radius: 10px;
+        font-weight: 700;
+        font-size: 0.85rem;
+        margin-top: 0.7rem;
+        margin-right: 0.5rem;
+    }
+</style>
+
+<nav class="qm-navbar">
+    <div class="max-w-3xl mx-auto px-4 py-3">
+        <a href="{% url 'restaurants:dashboard' %}" class="qm-back-link"><i class="fas fa-arrow-left"></i> Retour</a>
+    </div>
+</nav>
+
+<div class="max-w-3xl mx-auto px-4 py-8">
+    <div class="mb-6">
+        <h1 class="text-2xl font-extrabold text-gray-800 flex items-center gap-2">
+            <i class="fas fa-palette text-indigo-600"></i> Apparence de mon menu
+        </h1>
+        <p class="text-gray-500 mt-1">Choisissez les couleurs que verront vos clients sur votre menu en ligne.</p>
+    </div>
+
+    {% if messages %}
+        {% for message in messages %}
+            <div class="qm-alert {% if message.tags == 'error' %}qm-alert-error{% else %}qm-alert-success{% endif %} mb-6">
+                <i class="fas {% if message.tags == 'error' %}fa-circle-exclamation{% else %}fa-circle-check{% endif %}"></i>
+                <span>{{ message }}</span>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <div class="grid grid-cols-1 lg:grid-cols-5 gap-6">
+        <!-- Formulaire -->
+        <div class="lg:col-span-3 qm-card p-6">
+            <form method="POST" id="appearanceForm">
+                {% csrf_token %}
+
+                <div class="color-row">
+                    <div class="color-swatch-wrapper">{{ form.primary_color }}</div>
+                    <div class="color-info">
+                        <h3>{{ form.primary_color.label }}</h3>
+                        <p>{{ form.primary_color.help_text }}</p>
+                    </div>
+                </div>
+
+                <div class="color-row">
+                    <div class="color-swatch-wrapper">{{ form.secondary_color }}</div>
+                    <div class="color-info">
+                        <h3>{{ form.secondary_color.label }}</h3>
+                        <p>{{ form.secondary_color.help_text }}</p>
+                    </div>
+                </div>
+
+                <div class="color-row">
+                    <div class="color-swatch-wrapper">{{ form.background_color }}</div>
+                    <div class="color-info">
+                        <h3>{{ form.background_color.label }}</h3>
+                        <p>{{ form.background_color.help_text }}</p>
+                    </div>
+                </div>
+
+                <div class="color-row">
+                    <div class="color-swatch-wrapper">{{ form.text_color }}</div>
+                    <div class="color-info">
+                        <h3>{{ form.text_color.label }}</h3>
+                        <p>{{ form.text_color.help_text }}</p>
+                    </div>
+                </div>
+
+                <div class="opacity-slider-row">
+                    <h3 class="font-bold text-gray-800 text-sm mb-1">{{ form.header_opacity.label }}</h3>
+                    <p class="text-gray-500 text-sm mb-2">{{ form.header_opacity.help_text }}</p>
+                    {{ form.header_opacity }}
+                    <div class="opacity-labels">
+                        <span><i class="fas fa-sun"></i> Photo bien visible</span>
+                        <span>Texte bien lisible <i class="fas fa-moon"></i></span>
+                    </div>
+                </div>
+
+                <button type="submit" class="qm-btn qm-btn-primary w-full py-3.5 mt-6">
+                    <i class="fas fa-check"></i> Enregistrer
+                </button>
+            </form>
+        </div>
+
+        <!-- Aperçu en direct -->
+        <div class="lg:col-span-2">
+            <p class="text-xs font-bold text-gray-400 uppercase tracking-wide mb-2">Aperçu en direct</p>
+            <div class="preview-box">
+                <div class="preview-hero" id="previewHero">
+                    <div class="preview-hero-overlay" id="previewOverlay"></div>
+                    <div class="preview-hero-text">{{ restaurant.name }}</div>
+                </div>
+                <div class="preview-body" id="previewBody">
+                    <p style="font-size:0.9rem;" id="previewText">Salade César — Un classique frais et savoureux.</p>
+                    <span class="preview-btn" id="previewBtnPrimary" style="color:white;">Voir le menu</span>
+                    <span class="preview-btn" id="previewBtnSecondary" style="color:white;">🌱 Végétarien</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function updatePreview() {
+        const primary = document.getElementById('id_primary_color').value;
+        const secondary = document.getElementById('id_secondary_color').value;
+        const background = document.getElementById('id_background_color').value;
+        const text = document.getElementById('id_text_color').value;
+        const opacity = document.getElementById('id_header_opacity').value;
+
+        document.getElementById('previewOverlay').style.opacity = opacity;
+        document.getElementById('previewBody').style.background = background;
+        document.getElementById('previewText').style.color = text;
+        document.getElementById('previewBtnPrimary').style.background = primary;
+        document.getElementById('previewBtnSecondary').style.background = secondary;
+    }
+
+    ['id_primary_color', 'id_secondary_color', 'id_background_color', 'id_text_color', 'id_header_opacity'].forEach(id => {
+        document.getElementById(id).addEventListener('input', updatePreview);
+    });
+    updatePreview();
+</script>
+{% endblock %}
