@@ -69,7 +69,7 @@ def customize_appearance(request):
         return redirect('restaurants:login')
 
     if request.method == 'POST':
-        form = RestaurantAppearanceForm(request.POST, instance=restaurant)
+        form = RestaurantAppearanceForm(request.POST, request.FILES, instance=restaurant)
         if form.is_valid():
             form.save()
             messages.success(request, "L'apparence de votre menu a été mise à jour.")

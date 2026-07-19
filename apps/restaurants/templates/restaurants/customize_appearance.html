@@ -99,10 +99,26 @@
     <div class="grid grid-cols-1 lg:grid-cols-5 gap-6">
         <!-- Formulaire -->
         <div class="lg:col-span-3 qm-card p-6">
-            <form method="POST" id="appearanceForm">
+            <form method="POST" enctype="multipart/form-data" id="appearanceForm">
                 {% csrf_token %}
 
                 <div class="color-row">
+                    <div class="color-swatch-wrapper" style="width:64px;height:64px;">
+                        {% if restaurant.logo %}
+                            <img src="{{ restaurant.logo.url }}" alt="Logo actuel" style="width:64px;height:64px;border-radius:14px;object-fit:cover;box-shadow:0 2px 8px rgba(0,0,0,0.12);">
+                        {% else %}
+                            <div style="width:64px;height:64px;border-radius:14px;background:#f3f4f6;display:flex;align-items:center;justify-content:center;color:#9ca3af;">
+                                <i class="fas fa-image"></i>
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="color-info" style="flex:1;">
+                        <h3>{{ form.logo.label }}</h3>
+                        <p>{{ form.logo.help_text }}</p>
+                        {{ form.logo }}
+                    </div>
+                </div>
+
                     <div class="color-swatch-wrapper">{{ form.primary_color }}</div>
                     <div class="color-info">
                         <h3>{{ form.primary_color.label }}</h3>

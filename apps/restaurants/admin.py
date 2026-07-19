@@ -31,7 +31,7 @@ class RestaurantAdmin(admin.ModelAdmin):
     
     fieldsets = (
         ('Informations générales', {
-            'fields': ('owner', 'name', 'slug', 'logo', 'address', 'phone', 'description')
+            'fields': ('owner', 'name', 'slug', 'address', 'phone', 'description')
         }),
         ('Abonnement', {
             'fields': ('subscription_end', 'is_active'),

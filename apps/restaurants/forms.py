@@ -13,8 +13,9 @@ class RestaurantAppearanceForm(forms.ModelForm):
     """
     class Meta:
         model = Restaurant
-        fields = ['primary_color', 'secondary_color', 'background_color', 'text_color', 'header_opacity']
+        fields = ['logo', 'primary_color', 'secondary_color', 'background_color', 'text_color', 'header_opacity']
         labels = {
+            'logo': "Logo du restaurant",
             'primary_color': "Couleur principale",
             'secondary_color': "Couleur d'accent",
             'background_color': "Couleur de fond",
@@ -22,6 +23,7 @@ class RestaurantAppearanceForm(forms.ModelForm):
             'header_opacity': "Ambiance de la photo de couverture",
         }
         help_texts = {
+            'logo': "Affiché en haut de votre tableau de bord et sur votre menu public. Format carré recommandé.",
             'primary_color': "Utilisée pour les boutons et les titres importants.",
             'secondary_color': "Utilisée pour les petits détails et icônes.",
             'background_color': "La couleur de fond derrière votre menu.",
